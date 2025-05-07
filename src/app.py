@@ -64,12 +64,13 @@ def initialize_app():
         # Store document names in session state
         st.session_state.pdf_files = pdf_files
         
-        # Initialize agent graph
+        # Initialize agent graph with Azure OpenAI
         agent_graph = AgentGraph(
             vectorstore=vectorstore,
-            model_name=os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo"),
-            max_iterations=int(os.getenv("MAX_ITERATIONS", "2")),
-            relevance_threshold=float(os.getenv("RELEVANCE_THRESHOLD", "0.7"))
+            model_name=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-35-turbo"),  # Use deployment name as model name
+            max_iterations=int(os.getenv("MAX_ITERATIONS", "3")),
+            relevance_threshold=float(os.getenv("RELEVANCE_THRESHOLD", "0.7")),
+            use_azure=True  # Flag to ensure only Azure OpenAI is used
         )
         
         st.session_state.agent_graph = agent_graph
@@ -116,7 +117,7 @@ def show_sidebar():
         - Using Langchain for document processing
         - LangGraph for agentic workflow
         - Ollama for embeddings (nomic-embed-text)
-        - OpenAI for chat completion
+        - Azure OpenAI for chat completion
         - Documents stored in Chroma vector database
         """
     )

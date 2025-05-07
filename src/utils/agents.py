@@ -47,26 +47,35 @@ class AgentGraph:
         temperature: float = 0.1,
         max_iterations: int = 2,
         retrieval_k: int = 6,
-        relevance_threshold: float = 0.7
+        relevance_threshold: float = 0.7,
+        use_azure: bool = False
     ):
         self.vectorstore = vectorstore
         
-        # Check if Azure OpenAI environment variables are set
-        if (os.getenv("AZURE_OPENAI_API_KEY") and 
+        # Initialize LLM - Force Azure OpenAI if use_azure=True
+        if use_azure or (
+            os.getenv("AZURE_OPENAI_API_KEY") and 
             os.getenv("AZURE_OPENAI_ENDPOINT") and 
             os.getenv("AZURE_OPENAI_API_VERSION") and
-            os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")):
-            
+            os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+        ):
             # Use Azure OpenAI
+            deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", model_name)
             self.llm = AzureChatOpenAI(
-                azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-                openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+                azure_deployment=deployment_name,
+                openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2023-05-15"),
                 azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
                 api_key=os.getenv("AZURE_OPENAI_API_KEY"),
                 temperature=temperature
             )
-            logger.info("Using Azure OpenAI for LLM")
+            logger.info(f"Using Azure OpenAI for LLM with deployment {deployment_name}")
         else:
+            # Only reach here if use_azure is False and Azure environment variables are missing
+            if use_azure:
+                error_msg = "Azure OpenAI was requested but environment variables are missing"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+                
             # Fallback to regular OpenAI
             self.llm = ChatOpenAI(model=model_name, temperature=temperature)
             logger.info(f"Using OpenAI for LLM with model {model_name}")
